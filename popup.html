@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Concert Auto Booker</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f0f1a;
+      color: #e0e0e0;
+      width: 320px;
+      min-height: 420px;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #e63946, #c1121f);
+      padding: 16px 20px;
+      text-align: center;
+    }
+    .header h1 { font-size: 17px; font-weight: 700; letter-spacing: 0.5px; }
+    .header p { font-size: 11px; opacity: 0.85; margin-top: 3px; }
+
+    .body { padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; }
+
+    .field label {
+      display: block;
+      font-size: 12px;
+      color: #aaa;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    input[type="number"], input[type="text"] {
+      width: 100%;
+      background: #1e1e2e;
+      border: 1px solid #333;
+      border-radius: 8px;
+      color: #fff;
+      padding: 9px 12px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus { border-color: #e63946; }
+
+    .row { display: flex; gap: 10px; }
+    .row .field { flex: 1; }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #1e1e2e;
+      border-radius: 8px;
+      padding: 10px 14px;
+      border: 1px solid #333;
+    }
+    .toggle-row span { font-size: 13px; }
+
+    .switch {
+      position: relative; display: inline-block;
+      width: 40px; height: 22px;
+    }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute; cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: #444;
+      border-radius: 22px;
+      transition: 0.3s;
+    }
+    .slider:before {
+      content: "";
+      position: absolute;
+      height: 16px; width: 16px;
+      left: 3px; bottom: 3px;
+      background: white;
+      border-radius: 50%;
+      transition: 0.3s;
+    }
+    input:checked + .slider { background: #e63946; }
+    input:checked + .slider:before { transform: translateX(18px); }
+
+    .btn {
+      width: 100%;
+      padding: 11px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn-start {
+      background: linear-gradient(135deg, #e63946, #c1121f);
+      color: white;
+    }
+    .btn-stop {
+      background: #333;
+      color: #ccc;
+    }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .status-box {
+      background: #1e1e2e;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 10px 14px;
+      min-height: 64px;
+    }
+    .status-label { font-size: 11px; color: #888; margin-bottom: 5px; text-transform: uppercase; }
+    #statusText { font-size: 13px; line-height: 1.5; }
+    #statusText.ok { color: #4ade80; }
+    #statusText.err { color: #f87171; }
+    #statusText.warn { color: #fbbf24; }
+    #statusText.info { color: #60a5fa; }
+
+    .log-box {
+      background: #12121f;
+      border: 1px solid #222;
+      border-radius: 8px;
+      padding: 8px 12px;
+      max-height: 90px;
+      overflow-y: auto;
+      font-size: 11px;
+      line-height: 1.7;
+      color: #888;
+    }
+    .log-box::-webkit-scrollbar { width: 4px; }
+    .log-box::-webkit-scrollbar-track { background: transparent; }
+    .log-box::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+
+    .counter-row {
+      display: flex;
+      gap: 8px;
+    }
+    .counter-card {
+      flex: 1;
+      background: #1e1e2e;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 8px 10px;
+      text-align: center;
+    }
+    .counter-card .val { font-size: 20px; font-weight: 700; color: #e63946; }
+    .counter-card .lbl { font-size: 10px; color: #777; margin-top: 2px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Concert Auto Booker</h1>
+    <p>ระบบจองบัตร Concert อัตโนมัติ</p>
+  </div>
+
+  <div class="body">
+    <!-- Row 1: seat count + zone -->
+    <div class="row">
+      <div class="field">
+        <label>จำนวนที่นั่ง</label>
+        <input type="number" id="seatCount" min="1" max="10" value="1" />
+      </div>
+      <div class="field">
+        <label>โซน (เว้นว่าง=ทั้งหมด)</label>
+        <input type="text" id="zoneFilter" placeholder="A, B, VIP" />
+      </div>
+    </div>
+
+    <!-- Consecutive toggle -->
+    <div class="toggle-row">
+      <div>
+        <span>ที่นั่งติดกัน (แถวเดียวกัน)</span>
+        <div style="font-size:11px;color:#666;margin-top:3px;">ค้นหา N ที่นั่งที่ต่อเนื่องกัน</div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="consecutive" />
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <!-- Speed -->
+    <div class="field">
+      <label>ความเร็วสแกน (ms)</label>
+      <input type="number" id="interval" min="100" max="5000" value="300" />
+    </div>
+
+    <!-- Auto confirm toggle -->
+    <div class="toggle-row">
+      <span>กดยืนยันอัตโนมัติหลังเลือกครบ</span>
+      <label class="switch">
+        <input type="checkbox" id="autoConfirm" checked />
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <!-- Counters -->
+    <div class="counter-row">
+      <div class="counter-card">
+        <div class="val" id="cntFound">0</div>
+        <div class="lbl">ที่ว่างที่พบ</div>
+      </div>
+      <div class="counter-card">
+        <div class="val" id="cntSelected">0</div>
+        <div class="lbl">เลือกแล้ว</div>
+      </div>
+      <div class="counter-card">
+        <div class="val" id="cntScans">0</div>
+        <div class="lbl">รอบสแกน</div>
+      </div>
+    </div>
+
+    <!-- Status -->
+    <div class="status-box">
+      <div class="status-label">สถานะ</div>
+      <div id="statusText" class="info">พร้อมใช้งาน — กด Start เพื่อเริ่ม</div>
+    </div>
+
+    <!-- Log -->
+    <div class="log-box" id="logBox">
+      <div>รอเริ่มต้น...</div>
+    </div>
+
+    <!-- Buttons -->
+    <button class="btn btn-start" id="btnStart">Start — เริ่มสแกนและจอง</button>
+    <button class="btn btn-stop" id="btnStop" disabled>Stop — หยุด</button>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
